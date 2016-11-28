@@ -1,7 +1,5 @@
 import immutable from 'immutable';
 import some from 'lodash/some';
-import pick from 'lodash/pick';
-import keys from 'lodash/keys';
 import {SchemaTypes, getSchemaType} from './inner/schema-types';
 import {getObjectSchemaRecord} from './inner/get-object-schema-record';
 
@@ -52,8 +50,8 @@ function validate(schema, data, _keyPath = '') {
             if (isImmutableList(data) || isArray(data)) {
                 const itemSchema = schema.items;
                 valid = data.every((item, idx) => {
-                    const errMsg = validate(itemSchema, item, `${_keyPath}[${idx}]`);
-                    return !errMsg;
+                    errMsg = validate(itemSchema, item, `${_keyPath}[${idx}]`);
+                    return errMsg === '';
                 });
             }
             break;
@@ -86,27 +84,12 @@ function validate(schema, data, _keyPath = '') {
     return valid ? '' : (errMsg || buildErrMsg(`Expected type: "${schema.type}"`));
 }
 
-/** Validate data as part of "object" schema
- * @param {*} schema Only allow "object" type schema
- * @param {*} partialData
- * @return {string} '' means pass; Non-empty means failure reason
- */
-function validateObjectPartialProperties(schema, partialData) {
-    const schemaType = getSchemaType(schema);
-    if (schemaType === SchemaTypes.TYPE_OBJECT) {
-        return validateObjectProperties(pick(schema.properties, keys(partialData)), schema.required || [], partialData, '');
-    } else {
-        throw new Error(`validateObjectPartialProperties: Only support "object" schema, actual type: ${schemaType}`);
-    }
-}
-
 /** validate schema, and throw error if failed.
  * @param {*} schema
  * @param {*} data
- * @param {boolean=false} isPartialObjectData Whether to validate data as part of "object" schema
  */
-function ensureSchema(schema, data, isPartialObjectData = false) {
-    const err = isPartialObjectData ? validateObjectPartialProperties(schema, data) : validate(schema, data);
+function ensureSchema(schema, data) {
+    const err = validate(schema, data);
     if (err !== '') {
         throw new Error(`Schema validation Failed, Schema:(${schema.title || ''}), Error: ${err}`);
     }
@@ -115,6 +98,5 @@ function ensureSchema(schema, data, isPartialObjectData = false) {
 
 export {
     validate,
-    validateObjectPartialProperties,
     ensureSchema
 }

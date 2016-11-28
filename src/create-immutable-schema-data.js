@@ -1,7 +1,6 @@
 import immutable from 'immutable';
 import find from 'lodash/find';
-import pick from 'lodash/pick';
-import keys from 'lodash/keys';
+import assign from 'lodash/assign';
 import mapValues from 'lodash/mapValues';
 import {SchemaTypes, getSchemaType} from './inner/schema-types';
 import {validate, ensureSchema} from './validate';
@@ -33,12 +32,6 @@ function _innerCreateImmutableSchemaData(schema, data) {
     }
 }
 
-function _createObjectSchemaPartialData(schema, partialData) {
-    return mapValues(pick(schema.properties, keys[partialData]), (propSchema, propKey) => {
-        return _innerCreateImmutableSchemaData(propSchema, partialData[propKey]);
-    });
-}
-
 function createImmutableSchemaData(schema, data) {
     if (data == null) {
         return null;
@@ -49,15 +42,11 @@ function createImmutableSchemaData(schema, data) {
 
 function mergeImmutableSchemaData(schema, immutableSchemaData, mergedData) {
     const schemaType = getSchemaType(schema);
-    if (schemaType === SchemaTypes.TYPE_OBJECT) {
-        ensureSchema(schema, mergedData, true);
-        return immutableSchemaData.merge(_createObjectSchemaPartialData(schema, mergedData));
-    } else if (schemaType === schemaType !== SchemaTypes._TYPE_ANYOF) {
-        const tgtSchema = find(schema.anyOf, optSchema => validate(optSchema, immutableSchemaData) === '');
-        return mergeImmutableSchemaData(tgtSchema, immutableSchemaData, mergedData);
-    } else {
+    if (schemaType !== SchemaTypes.TYPE_OBJECT && schemaType !== SchemaTypes._TYPE_ANYOF) {
         throw new Error(`mergeImmutableSchemaData: Only support "object" or "anyOf" schema, actual type: ${schemaType}`);   
     }
+    const data = assign(immutableSchemaData.toObject(), mergedData);
+    return createImmutableSchemaData(schema, data);
 }
 
 export {
