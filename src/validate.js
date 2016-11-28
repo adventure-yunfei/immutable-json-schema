@@ -1,6 +1,9 @@
 import immutable from 'immutable';
 import some from 'lodash/some';
-import {SchemaTypes, getSchemaType} from './schema-types';
+import pick from 'lodash/pick';
+import keys from 'lodash/keys';
+import {SchemaTypes, getSchemaType} from './inner/schema-types';
+import {getObjectSchemaRecord} from './inner/get-object-schema-record';
 
 const isNumber = val => typeof val === 'number';
 const isString = val => typeof val === 'string';
@@ -10,7 +13,7 @@ const isObject = val => !!val && typeof val === 'object';
 const isImmutableList = val => val instanceof immutable.List;
 const isImmutableRecord = val => val instanceof immutable.Record;
 
-function validateSchemaProperties(schemaProperties, requiredProps, data, _keyPath) {
+function validateObjectProperties(schemaProperties, requiredProps, data, _keyPath) {
     const requiredMap = {};
     requiredProps.forEach(prop => requiredMap[prop] = true);
     let errMsg = '';
@@ -24,8 +27,13 @@ function validateSchemaProperties(schemaProperties, requiredProps, data, _keyPat
         }
     });
     return errMsg;
-};
+}
 
+/** Validate data with schema
+ * @param {*} schema
+ * @param {*} data
+ * @return {string} '' means pass; Non-empty means failure reason
+ */
 function validate(schema, data, _keyPath = '') {
     let valid = false,
         buildErrMsg = expectedMsg => `Path: "${_keyPath}"; ${expectedMsg}; Actual value: ${JSON.stringify(data.toJS ? data.toJS() : data)}`,
@@ -41,7 +49,7 @@ function validate(schema, data, _keyPath = '') {
             valid = isBoolean(data);
             break;
         case SchemaTypes.TYPE_ARRAY:
-            if (isArray(data) || isImmutableList(data)) {
+            if (isImmutableList(data) || isArray(data)) {
                 const itemSchema = schema.items;
                 valid = data.every((item, idx) => {
                     const errMsg = validate(itemSchema, item, `${_keyPath}[${idx}]`);
@@ -50,8 +58,11 @@ function validate(schema, data, _keyPath = '') {
             }
             break;
         case SchemaTypes.TYPE_OBJECT:
-            if (isImmutableRecord(data) || (isObject(data) && !isArray(data))) {
-                errMsg = validateSchemaProperties(schema.properties, schema.required || [], data);
+            if (isImmutableRecord(data)) {
+                valid = data instanceof getObjectSchemaRecord(schema);
+                errMsg = valid ? '' : buildErrMsg('Expected immutable record');
+            } else if (isObject(data) && !isArray(data)) {
+                errMsg = validateObjectProperties(schema.properties, schema.required || [], data, _keyPath);
                 valid = !errMsg;
             }
             break;
@@ -75,9 +86,27 @@ function validate(schema, data, _keyPath = '') {
     return valid ? '' : (errMsg || buildErrMsg(`Expected type: "${schema.type}"`));
 }
 
-// validate schema, and throw error if failed.
-function ensureSchema(schema, data) {
-    const err = validate(schema, data);
+/** Validate data as part of "object" schema
+ * @param {*} schema Only allow "object" type schema
+ * @param {*} partialData
+ * @return {string} '' means pass; Non-empty means failure reason
+ */
+function validateObjectPartialProperties(schema, partialData) {
+    const schemaType = getSchemaType(schema);
+    if (schemaType === SchemaTypes.TYPE_OBJECT) {
+        return validateObjectProperties(pick(schema.properties, keys(partialData)), schema.required || [], partialData, '');
+    } else {
+        throw new Error(`validateObjectPartialProperties: Only support "object" schema, actual type: ${schemaType}`);
+    }
+}
+
+/** validate schema, and throw error if failed.
+ * @param {*} schema
+ * @param {*} data
+ * @param {boolean=false} isPartialObjectData Whether to validate data as part of "object" schema
+ */
+function ensureSchema(schema, data, isPartialObjectData = false) {
+    const err = isPartialObjectData ? validateObjectPartialProperties(schema, data) : validate(schema, data);
     if (err !== '') {
         throw new Error(`Schema validation Failed, Schema:(${schema.title || ''}), Error: ${err}`);
     }
@@ -86,5 +115,6 @@ function ensureSchema(schema, data) {
 
 export {
     validate,
+    validateObjectPartialProperties,
     ensureSchema
 }

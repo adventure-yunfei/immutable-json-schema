@@ -2,10 +2,15 @@
   "name": "immutable-json-schema",
   "version": "0.0.1",
   "description": "React immutable.js data with JSON Schema",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "test": "mocha",
-    "build": "babel src --out-dir lib"
+    "postinstall": "npm run build --loglevel=silent",
+    "build": "babel src --out-dir lib",
+    "lint": "eslint src"
   },
   "keywords": [
     "immutable",
@@ -15,14 +20,18 @@
   "author": "adventure-yunfei",
   "license": "MIT",
   "dependencies": {
-    "immutable": "^3.8.1",
     "lodash": "^4.17.2"
+  },
+  "peerDependencies": {
+    "immutable": "^3.8.1"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0",
+    "babel-eslint": "^7.1.1",
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-es2016": "^6.16.0",
     "chai": "^3.5.0",
+    "eslint": "^3.11.0",
     "mocha": "^3.2.0"
   }
 }

@@ -1,16 +1,11 @@
 import immutable from 'immutable';
 import find from 'lodash/find';
+import pick from 'lodash/pick';
+import keys from 'lodash/keys';
 import mapValues from 'lodash/mapValues';
-import {SchemaTypes, getSchemaType} from './schema-types';
+import {SchemaTypes, getSchemaType} from './inner/schema-types';
 import {validate, ensureSchema} from './validate';
-
-function getObjectSchemaRecord(schema) {
-    if (!schema.__record) {
-        const recordOptions = mapValues(schema.properties, () => null);
-        schema.__record = new immutable.Record(recordOptions, `SchemaRecord[${schema.title || ''}]`);
-    }
-    return schema.__record;
-}
+import {getObjectSchemaRecord} from './inner/get-object-schema-record';
 
 function _innerCreateImmutableSchemaData(schema, data) {
     if (data == null) {
@@ -38,6 +33,12 @@ function _innerCreateImmutableSchemaData(schema, data) {
     }
 }
 
+function _createObjectSchemaPartialData(schema, partialData) {
+    return mapValues(pick(schema.properties, keys[partialData]), (propSchema, propKey) => {
+        return _innerCreateImmutableSchemaData(propSchema, partialData[propKey]);
+    });
+}
+
 function createImmutableSchemaData(schema, data) {
     if (data == null) {
         return null;
@@ -48,13 +49,15 @@ function createImmutableSchemaData(schema, data) {
 
 function mergeImmutableSchemaData(schema, immutableSchemaData, mergedData) {
     const schemaType = getSchemaType(schema);
-    if (schemaType !== SchemaTypes.TYPE_OBJECT && schemaType !== SchemaTypes._TYPE_ANYOF) {
-        throw new Error(`mergeImmutableSchemaData: Only support "object" or "anyOf" schema, actual type: ${schemaType}`);
+    if (schemaType === SchemaTypes.TYPE_OBJECT) {
+        ensureSchema(schema, mergedData, true);
+        return immutableSchemaData.merge(_createObjectSchemaPartialData(schema, mergedData));
+    } else if (schemaType === schemaType !== SchemaTypes._TYPE_ANYOF) {
+        const tgtSchema = find(schema.anyOf, optSchema => validate(optSchema, immutableSchemaData) === '');
+        return mergeImmutableSchemaData(tgtSchema, immutableSchemaData, mergedData);
+    } else {
+        throw new Error(`mergeImmutableSchemaData: Only support "object" or "anyOf" schema, actual type: ${schemaType}`);   
     }
-    return createImmutableSchemaData(schema, assign(
-        immutableSchemaData.toJS(),
-        mergedData
-    ));
 }
 
 export {

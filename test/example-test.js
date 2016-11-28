@@ -19,9 +19,6 @@ describe('Example Test', function () {
                 'boolean'
             ])
         });
-        function copyData(props) {
-            return Object.assign({}, data, props);
-        }
         function ensureNotSchema(schema, data) {
             try {
                 validate.ensureSchema(schema, data);
@@ -42,6 +39,9 @@ describe('Example Test', function () {
             f_enum: false,
             d_anyof: true
         };
+        function copyData(props) {
+            return Object.assign({}, data, props);
+        }
         validate.ensureSchema(schema, data);
 
         validate.ensureSchema(schema, copyData({
@@ -68,7 +68,8 @@ describe('Example Test', function () {
 
 
         // Test immutable creation
-        assert.deepEqual(immutableSchema.createImmutableSchemaData(schema, data).toJS(), data);
+        const schemaData = immutableSchema.createImmutableSchemaData(schema, data);
+        assert.deepEqual(schemaData.toJS(), data);
 
         assert.deepEqual(immutableSchema.createImmutableSchemaData(schema, copyData({
             extra_prop: 231
@@ -80,5 +81,16 @@ describe('Example Test', function () {
                 extra_prop: 'aaa'
             },
         })).toJS(), data);
+
+        function checkMergeSchemaData(mergedData) {
+            assert.deepEqual(immutableSchema.mergeImmutableSchemaData(schema, schemaData, mergedData).toJS(), copyData(data));
+        }
+        checkMergeSchemaData({
+            a_obj: {
+                str_in_a_obj: 'xxx'
+            }
+        });
+
+        checkMergeSchemaData({e_bool: false, d_str: '22'});
     });
 });

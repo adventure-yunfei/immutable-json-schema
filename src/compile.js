@@ -1,7 +1,11 @@
 import omit from 'lodash/omit';
 import mapValues from 'lodash/mapValues';
+import difference from 'lodash/difference';
+import keys from 'lodash/keys';
+import assign from 'lodash/assign';
 import values from 'lodash/values';
-import {SchemaTypes, getSchemaType} from './schema-types';
+import {SchemaTypes} from './inner/schema-types';
+import {getConfig} from './config';
 
 const isString = val => typeof val === 'string';
 const isArray = val => val instanceof Array;
@@ -18,16 +22,26 @@ function compileStringSchemaDef(strSchemaDef) {
 }
 
 function compileSimpleSyntaxSchemaDef(simpleSchemaDef) {
-    return {
+    return assign({
         type: SchemaTypes.TYPE_OBJECT,
         properties: mapValues(omit(simpleSchemaDef, ['__options']), compile)
-    };
+    }, simpleSchemaDef.__options || {});
 }
 
+function compileRawSyntaxSchema(rawSchemaDef) {
+    const setupForRawSubSchema = subSchema => compile(assign(subSchema, {__raw: true})),
+        compiledSchema = rawSchemaDef;
+    compiledSchema.items && (compiledSchema.items = setupForRawSubSchema(compiledSchema.items));
+    compiledSchema.properties && (compiledSchema.properties = mapValues(compiledSchema.properties, setupForRawSubSchema));
+    compiledSchema.anyOf && (compiledSchema.anyOf = compiledSchema.anyOf.map(setupForRawSubSchema));
+    return compiledSchema;
+}
 
 function compile(schemaDefinition) {
     let compiledSchema = null;
-    if (isString(schemaDefinition)) {
+    if (schemaDefinition.__compiled) {
+        return schemaDefinition;
+    } else if (isString(schemaDefinition)) {
         compiledSchema = compileStringSchemaDef(schemaDefinition);
     } else if (isArray(schemaDefinition)) {
         if (schemaDefinition.length !== 1) {
@@ -38,13 +52,21 @@ function compile(schemaDefinition) {
             items: compile(schemaDefinition[0])
         };
     } else if (isObject(schemaDefinition)) {
-        if (schemaDefinition.__compiled) {
-            compiledSchema = schemaDefinition;
+        if (schemaDefinition.__raw) {
+            compiledSchema = compileRawSyntaxSchema(schemaDefinition);
         } else {
             compiledSchema = compileSimpleSyntaxSchemaDef(schemaDefinition);
         }
     } else {
         throw new Error('compile: schema definition invalid. Only support string/array/object format: ' + JSON.stringify(schemaDefinition));
+    }
+
+    const config = getConfig();
+    if (compiledSchema.notRequired) {
+        compiledSchema.required = difference(keys(compiledSchema.properties), compiledSchema.notRequired);
+    }
+    if (config.defaultRequired && !compiledSchema.required) {
+        compiledSchema.required = keys(compiledSchema.properties);
     }
 
     compiledSchema.__compiled = true;
