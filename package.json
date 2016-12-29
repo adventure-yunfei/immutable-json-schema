@@ -9,6 +9,7 @@
   "scripts": {
     "test": "mocha",
     "postinstall": "npm run build --loglevel=silent",
+    "prepublish": "npm run build --loglevel=silent",
     "build": "babel src --out-dir lib",
     "lint": "eslint src"
   },
