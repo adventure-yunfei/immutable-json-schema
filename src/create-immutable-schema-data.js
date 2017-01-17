@@ -7,8 +7,11 @@ import {validate, ensureSchema} from './validate';
 import {getObjectSchemaRecord} from './inner/get-object-schema-record';
 
 function _innerCreateImmutableSchemaData(schema, data) {
+    if (data === undefined && schema.default !== undefined) {
+        data = schema.default;
+    }
     if (data == null) {
-        return null;
+        return undefined;
     }
     switch (getSchemaType(schema)) {
         case SchemaTypes.TYPE_NUMBER:
@@ -33,7 +36,7 @@ function _innerCreateImmutableSchemaData(schema, data) {
 }
 
 function createImmutableSchemaData(schema, data) {
-    if (data == null) {
+    if (data === null) {
         return null;
     }
     ensureSchema(schema, data);

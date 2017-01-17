@@ -44,13 +44,15 @@ function compile(schemaDefinition) {
     } else if (isString(schemaDefinition)) {
         compiledSchema = compileStringSchemaDef(schemaDefinition);
     } else if (isArray(schemaDefinition)) {
-        if (schemaDefinition.length !== 1) {
-            throw new Error('compile: schema def of array must contain one and only one item: ' + JSON.stringify(schemaDefinition));
+        if (schemaDefinition.length !== 1 && schemaDefinition.length !== 2) {
+            throw new Error('compile: schema def of array must contain one or two item: ' + JSON.stringify(schemaDefinition));
         }
-        compiledSchema = {
+        const itemSchema = schemaDefinition[0],
+            options = schemaDefinition[1] && schemaDefinition[1].__options || {};
+        compiledSchema = assign({
             type: SchemaTypes.TYPE_ARRAY,
-            items: compile(schemaDefinition[0])
-        };
+            items: compile(itemSchema)
+        }, options);
     } else if (isObject(schemaDefinition)) {
         if (schemaDefinition.__raw) {
             compiledSchema = compileRawSyntaxSchema(schemaDefinition);
@@ -62,11 +64,12 @@ function compile(schemaDefinition) {
     }
 
     const config = getConfig();
-    if (compiledSchema.notRequired) {
-        compiledSchema.required = difference(keys(compiledSchema.properties), compiledSchema.notRequired);
-    }
-    if (config.defaultRequired && !compiledSchema.required) {
-        compiledSchema.required = keys(compiledSchema.properties);
+    if (!compiledSchema.required) {
+        if (compiledSchema.notRequired) {
+            compiledSchema.required = difference(keys(compiledSchema.properties), compiledSchema.notRequired);
+        } else if (config.defaultRequired) {
+            compiledSchema.required = keys(compiledSchema.properties);
+        }
     }
 
     compiledSchema.__compiled = true;

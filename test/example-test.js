@@ -83,7 +83,7 @@ describe('Example Test', function () {
         })).toJS(), data);
 
         function checkMergeSchemaData(mergedData) {
-            assert.deepEqual(immutableSchema.mergeImmutableSchemaData(schema, schemaData, mergedData).toJS(), copyData(data));
+            assert.deepEqual(immutableSchema.mergeImmutableSchemaData(schema, schemaData, mergedData).toJS(), copyData(mergedData));
         }
         checkMergeSchemaData({
             a_obj: {

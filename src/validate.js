@@ -34,8 +34,11 @@ function validateObjectProperties(schemaProperties, requiredProps, data, _keyPat
  */
 function validate(schema, data, _keyPath = '') {
     let valid = false,
-        buildErrMsg = expectedMsg => `Path: "${_keyPath}"; ${expectedMsg}; Actual value: ${JSON.stringify(data.toJS ? data.toJS() : data)}`,
+        buildErrMsg = expectedMsg => `Path: "${_keyPath}"; ${expectedMsg}; Actual value: ${JSON.stringify(data && data.toJS ? data.toJS() : data)}`,
         errMsg = '';
+    if (data === undefined && schema.default !== undefined) {
+        data = schema.default;
+    }
     switch (getSchemaType(schema)) {
         case SchemaTypes.TYPE_NUMBER:
             valid = isNumber(data);

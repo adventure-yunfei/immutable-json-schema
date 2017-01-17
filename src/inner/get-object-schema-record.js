@@ -3,7 +3,7 @@ import mapValues from 'lodash/mapValues';
 
 function getObjectSchemaRecord(schema) {
     if (!schema.__record) {
-        const recordOptions = mapValues(schema.properties, () => null);
+        const recordOptions = mapValues(schema.properties, () => undefined);
         schema.__record = new immutable.Record(recordOptions, `SchemaRecord[${schema.title || ''}]`);
     }
     return schema.__record;
