@@ -15,6 +15,7 @@
 
 - `__raw`: 为`true`时标记语法为JSON-Schema标准语法
 - `__options`: 用于配置Object类型的参数，可用的可选项为:
+    - `title` 定义Schema的描述名称
     - `default` 定义默认值 (传入数据值为`undefined`时应用的默认值，为`null`时**不应用**默认值)
     - `required` (对"object"类型) 定义Object类型的必填项
     - `notRequired` (对"object"类型) 类似"required"关键字，定义Object类型的可选项 (其余项必填)，优先级低于"required"
@@ -162,6 +163,7 @@ export const ResourceSchema = compileAnyOf([
 - `type`
 - `items`
 - `properties`
+- `title`
 - `required`
 - `default`
 - `anyOf` (仅对"object"类型)

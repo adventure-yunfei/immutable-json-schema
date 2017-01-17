@@ -10,6 +10,54 @@
 - 兼容 JSON-Schema 语法 (已实现部分)
 
 # Schema 使用示例
+```javascript
+import {compile, compileEnum, validate, createImmutableSchemaData, mergeImmutableSchemaData, ReactPropTypes} from 'immutable-json-schema';
+
+// 创建 Schema
+const UserSchema = compile({
+    name: 'string',
+    age: 'number',
+    married: 'boolean'
+    gender: compileEnum(['male', 'female']),
+    childrenNames: ['string']
+});
+
+// 数据源
+const userJSONData = {
+    name: 'Jack',
+    age: 26,
+    married: false,
+    gender: 'male',
+    childrenNames: ['Tom', 'Jerry'],
+    foo: 'bar'
+};
+
+// 可校验数据
+validate(UserSchema, userJSONData) === '';
+
+// 验证数据, 转换为immutable (Object => immutable.Record)
+const immutableUserData = createImmutableSchemaData(UserSchema, userJSONData);
+// 现在数据一定符合 UserSchema 定义的数据格式，并且多余的属性也会被移除(这里的 {foo: 'bar'})
+
+// 校验方法同样适用于转换后的immutable数据
+validate(UserSchema, immutableUserData) === '';
+
+// 用 UserSchema 校验 React 组件数据
+class UserDetailPage extends React.Component {
+    static propTypes = {
+        userData: ReactPropTypes.ofSchema(UserSchema).isRequired
+    }
+    // ...
+}
+
+// 修改immutable数据，同时保证依然符合UserSchema格式
+const newImmutableUserData = mergeImmutableSchemaData(UserSchema, immutableUserData, {
+    married: true
+});
+
+```
+
+# Schema 语法示例
 
 具体语法参考文档 [Schema 语法]()。
 
@@ -87,30 +135,41 @@ compile({
 
 为了配合 React PureRender，必须采用 Immutable JSON 数据。而直接转换得到的普通的 Immutable.Map 数据只能通过 `.get('XXX')` 访问，使用不方便，且不利于组内推广。
 
-通过 Schema 预定义的格式，将 Map 转换成 Record，以方便读取，同时可以非常高效的用于React PropTypes的组件数据格式校验。
+通过 Schema 预定义的格式，将 Map 转换成 Record，以方便读取，也可以非常高效的用于React PropTypes的组件数据格式校验。
+
+同时，数据的修改也会依然保持Schema定义的数据格式。
 
 ### Schema 到 Immutable 的对应类型
 
 Schema 定义的类型与转换后的 Immutable 类型对应：
 
-- Array -> Immutable.List
-- Object -> Immutable.Record
+- array -> Immutable.List
+- object -> Immutable.Record (注：转换成immutable之后，对"object"类型会过滤未定义的属性)
 - string/boolean/number -> 保持不变
 
-### Schema 转换数据为 Immutable 格式
+# API
 
-- `createImmutableSchema(schema, data)` 将json数据完整的转换为schema & immutable数据
-- `mergeImmutableSchema(schema, oldSchemaImmutableData, newChangesData)` 将部分json数据合并到已有的schema & immutable数据上
+### 编译 Schema
 
-注：转换成immutable之后，对"object"类型会过滤未定义的属性
+- `compile(schemaDefinition): schema` 编译Schema
+- `compileEnum(<Array|Object>): schema` 编译"enum"类型Schema
+- `compileAnyOf(<Array.<schemaDefinition>>): schema` 编译"anyOf"类型Schema
 
-### Schema 与 React PropTypes 结合: `ofSchema`
+### 验证数据
 
-假设定义了Schema: `MemberListSchema`。
-当某个组件接受这个Schema格式的数据时，可以定义如下`propTypes`校验数据:
+- `validate(schema, data): error_string` 验证数据，并返回错误原因的字符串，(验证正确则返回空字符串)
 
-```javascript
-    static propTypes = {
-        members: ReactPropTypes.ofSchema(MemberListSchema).isRequired
-    }
-```
+### 转换为 Immutable
+
+- `createImmutableSchemaData(schema, data): immutableData` 将json数据完整的转换为schema & immutable数据
+- `mergeImmutableSchemaData(schema, oldSchemaImmutableData, newChangesData): immutableData` 修改数据，将部分json数据合并到已有的schema & immutable数据上
+
+### React PropTypes 组件数据校验
+
+- `ReactPropTypes.ofSchema(schema): react_prop_validator` 验证组件值符合Schema格式
+
+### 自定义配置
+
+- `setupConfig({...})`。可用的配置项为:
+  - `defaultRequired` 对"object"类型，如果没有指明"required"或"notRequired"选项，是否默认全部属性为必填 (默认为 true)
+  - `shallowValidateImmutableRecord` 执行验证时，是否对immutable Record不作深层比对 (默认为 true, 性能更好，在**仅通过** mergeImmutableSchemaData 修改数据时可保证正确性)
