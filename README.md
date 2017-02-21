@@ -9,6 +9,14 @@
 - 与 React PropTypes 结合，校验组件数据
 - 兼容 JSON-Schema 语法 (已实现部分)
 
+# 我要这何用？
+
+在典型的 React 项目里，数据格式基本都是以 JSON 形式存储，而同时为了效率，immutable.js 处理 JSON 比对必不可少。然而 JSON 数据分块到各个组件时，已经很难清楚数据格式，更有项目维护中的字段增删改，数据格式面目全非，完全没法维护。
+
+于是定义 immutable.js & JSON 的数据格式并提供各种方便的开发时检查也变得必可不少。
+
+在我个人的管理React项目开发小组的体验中，`immutable-json-schema` 是维持团队代码质量以及方便接替他人代码（总有些时候你得去修别人的BUG）的最有效的工具。
+
 # Schema 使用示例
 ```javascript
 import {compile, compileEnum, validate, createImmutableSchemaData, mergeImmutableSchemaData, ReactPropTypes} from 'immutable-json-schema';

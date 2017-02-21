@@ -1,6 +1,6 @@
 {
   "name": "immutable-json-schema",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "React immutable.js data with JSON Schema",
   "main": "lib/index.js",
   "files": [
@@ -8,7 +8,6 @@
   ],
   "scripts": {
     "test": "npm run build && mocha",
-    "postinstall": "npm run build --loglevel=silent",
     "prepublish": "npm run build --loglevel=silent",
     "build": "babel src --out-dir lib",
     "lint": "eslint src"
@@ -34,5 +33,16 @@
     "chai": "^3.5.0",
     "eslint": "^3.11.0",
     "mocha": "^3.2.0"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adventure-yunfei/immutable-json-schema.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adventure-yunfei/immutable-json-schema/issues"
+  },
+  "homepage": "https://github.com/adventure-yunfei/immutable-json-schema#readme"
 }
