@@ -67,7 +67,7 @@ const newImmutableUserData = mergeImmutableSchemaData(UserSchema, immutableUserD
 
 # Schema 语法示例
 
-具体语法参考文档 [Schema 语法]()。
+具体语法参考文档 [Schema 语法](https://github.com/adventure-yunfei/immutable-json-schema/blob/master/Schema_Syntax.md)。
 
 ```javascript
 compile({
@@ -154,6 +154,10 @@ Schema 定义的类型与转换后的 Immutable 类型对应：
 - array -> Immutable.List
 - object -> Immutable.Record (注：转换成immutable之后，对"object"类型会过滤未定义的属性)
 - string/boolean/number -> 保持不变
+
+# 安装
+
+- `npm install immutable-json-schema`
 
 # API
 
